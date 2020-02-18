@@ -2,7 +2,6 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMenuBar, qApp, \
     QAction, QFileDialog, QAction
-from PyQt5.QtGui import QImage, QIcon, QPainter, QPen, QBrush, QPixmap
 from PyQt5.QtCore import Qt, QPoint
 from PyQt5 import QtCore, QtGui, QtWidgets
 
