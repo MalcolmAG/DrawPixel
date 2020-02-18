@@ -1,8 +1,7 @@
 # This Python file uses the following encoding: utf-8
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMenuBar, qApp, \
-    QAction, QFileDialog, QAction, QLabel
-from PyQt5.QtGui import QImage, QIcon, QPainter, QPen, QBrush, QPixmap
+    QAction, QFileDialog, QAction
 from PyQt5.QtCore import Qt, QPoint
 from PyQt5 import QtCore, QtGui, QtWidgets
 from Canvas import *
