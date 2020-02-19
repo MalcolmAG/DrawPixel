@@ -1,9 +1,9 @@
 # This Python file uses the following encoding: utf-8
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMenuBar, qApp, \
-    QAction, QFileDialog, QAction
-from PyQt5.QtCore import Qt, QPoint
-from PyQt5 import QtCore, QtGui, QtWidgets
+    QAction, QFileDialog, QAction, QLabel, QMessageBox, QInputDialog, \
+    QColorDialog, QToolBar, QSlider
+from PyQt5.QtCore import Qt
 from Canvas import *
 
 class DrawPixel(QMainWindow):
@@ -17,18 +17,16 @@ class DrawPixel(QMainWindow):
         self.setCentralWidget(self.canvas)
 
         self.initActions()
-        self.initSizeActions()
-        self.initColorActions()
         self.initMenu()
 
         self.setWindowTitle("Draw Pixel")
         self.resize(800, 600)
 
-        # self.toolbar = QtWidgets.QToolBar("Size Bar", self)
-        # self.toolbar.addAction("PlaceHolder")
+        self.toolbar = QToolBar("Size Bar", self)
+        self.toolbar.addAction("PlaceHolder")
 
-        # self.sizeSlider = QtWidgets.QSlider(self)
-        # self.toolbar.addWidget(self.sizeSlider)
+        self.sizeSlider = QSlider(self)
+        self.toolbar.addWidget(self.sizeSlider)
 
 
     def initMenu(self):
@@ -36,6 +34,7 @@ class DrawPixel(QMainWindow):
 
         self.fileMenu = self.menubar.addMenu("File")
         self.fileMenu.addAction(self.saveAct)
+        self.fileMenu.addAction(self.openAct)
 
         self.editMenu = self.menubar.addMenu("Edit")
         self.editMenu.addAction(self.undoAct)
@@ -48,80 +47,111 @@ class DrawPixel(QMainWindow):
         self.viewMenu.addAction(self.zoomInAct)
         self.viewMenu.addAction(self.zoomOutAct)
 
-        self.brushSizeMenu = self.menubar.addMenu("Brush Size")
-        self.brushSizeMenu.addAction(self.threepxAction)
-        self.brushSizeMenu.addAction(self.fivepxAction)
-        self.brushSizeMenu.addAction(self.sevenpxAction)
-        self.brushSizeMenu.addAction(self.ninepxAction)
-
-        self.brushColorMenu = self.menubar.addMenu("Brush Color")
-        self.brushColorMenu.addAction(self.yellowAction)
-        self.brushColorMenu.addAction(self.blackAction)
-        self.brushColorMenu.addAction(self.whiteAction)
-        self.brushColorMenu.addAction(self.redAction)
-        self.brushColorMenu.addAction(self.greenAction)
+        self.brushOptionsMenu = self.menubar.addMenu("Brush Options")
+        self.brushOptionsMenu.addAction(self.brushWidthAct)
+        self.brushOptionsMenu.addAction(self.brushColorAct)
 
     def initActions(self):
+        # Open Action
+        self.openAct = QAction("Open", self)
+        self.openAct.setShortcut("Ctrl+O")
+        self.openAct.triggered.connect(self.openFile)
+
         # Save Action
-        self.saveAct = QAction("Save", self, shortcut = "Ctrl+S",
-                          triggered=self.save)
+        self.saveAct = QAction("Save", self)
+        self.saveAct.setShortcut("Ctrl+S")
+        self.saveAct.triggered.connect(self.saveFile)
+
         # Clear Action
-        self.clearAct = QAction("Clear", self,
-                                             triggered=self.canvas.clearScreen)
+        self.clearAct = QAction("Clear", self)
+        self.clearAct.triggered.connect(self.canvas.clearScreen)
+
         # Debug Action
-        self.debugAct = QAction("Debug Message", self,
-                                     shortcut="Ctrl+D", triggered=lambda: self.printMessage(self.centralWidget()))
+        self.debugAct = QAction("Debug Message", self)
+        self.debugAct.setShortcut("Ctrl+D")
+        self.debugAct.triggered.connect(lambda: self.printMessage("DEBUG"))
+
+        # Brush Width
+        self.brushWidthAct = QAction("Brush Width", self)
+        self.brushWidthAct.triggered.connect(self.setBrushWidth)
+
+        self.brushColorAct = QAction("Brush Color", self)
+        self.brushColorAct.triggered.connect(self.setBrushColor)
+
         # Undo
-        self.undoAct = QAction("Undo", self, shortcut="Ctrl+Z",
-                                         triggered=lambda:
-                                         self.printMessage("Undo"))
+        self.undoAct = QAction("Undo", self)
+        self.undoAct.setShortcut("Ctrl+Z")
+        self.undoAct.triggered.connect(lambda: self.printMessage("Undo"))
         # Redo
-        self.redoAct = QAction("Redo", self, shortcut="Ctrl+Shift+Z",
-                                         triggered=lambda:
+        self.redoAct = QAction("Redo", self)
+        self.redoAct.setShortcut("Ctrl+Shift+Z")
+        self.redoAct.triggered.connect(lambda:
                                          self.printMessage("Redo"))
-        self.zoomInAct = QAction("Zoom In", self,
-                                          shortcut="Ctrl+Plus",
-                                         triggered=lambda:
-                                         self.printMessage("Zoom In"))
-        self.zoomOutAct = QAction("Zoom Out", self,
-                                          shortcut="Ctrl+Minus",
-                                         triggered=lambda:
-                                         self.printMessage("Zoom Out"))
+        # Zoom In
+        self.zoomInAct = QAction("Zoom In", self)
+        self.zoomInAct.setShortcut("Ctrl+Plus")
+        self.zoomInAct.triggered.connect(lambda: self.printMessage("ZoomIn"))
 
-    # TODO: Add size slider
-    def initSizeActions(self):
-        self.threepxAction = QAction(QIcon("icons/threepx.png"), "3px", self,
-                                triggered=lambda: self.changeSize(3))
-        self.fivepxAction = QAction(QIcon("icons/fivepx.png"), "5px", self,
-                                    triggered=lambda: self.changeSize(5))
-        self.sevenpxAction = QAction(QIcon("icons/sevenpx.png"), "7px", self,
-                                    triggered=lambda: self.changeSize(7))
-        self.ninepxAction = QAction(QIcon("icons/ninepx.png"), "9px", self,
-                                    triggered=lambda: self.changeSize(9))
-    def changeSize(self, size):
-        self.canvas.setPenWidth(size)
+        # Zoom Out
+        self.zoomOutAct = QAction("Zoom Out", self)
+        self.zoomOutAct.setShortcut("Ctrl+Minus")
+        self.zoomOutAct.triggered.connect(lambda: self.printMessage(
+            "ZoomOut"))
 
-    # TODO: Add Color Wheel
-    def initColorActions(self):
-        self.blackAction = QAction("Black", self, triggered=lambda: self.changeColor(Qt.black))
-        self.whiteAction = QAction("White", self, triggered=lambda: self.changeColor(Qt.white))
-        self.redAction = QAction("Red", self, triggered=lambda:self.changeColor(Qt.red))
-        self.greenAction = QAction("Green", self, triggered=lambda:self.changeColor(Qt.green))
-        self.yellowAction = QAction("Yellow", self, triggered=lambda:self.changeColor(Qt.yellow))
-    def changeColor(self, color):
-        self.canvas.setPenColor(color)
+    def setBrushWidth(self):
+        # returns tuple
+        newWidth, ok = QInputDialog().getInt(self, "Scribble", "Select Pen "
+                                                               "Width",  1,
+                                             1, 50)
+        if ok:
+            self.canvas.setPenWidth(newWidth)
 
-    def printMessage(self, message):
-        print(message)
+    def setBrushColor(self):
+        newColor = QColorDialog().getColor(self.canvas.penColor(), self)
+        if newColor.isValid():
+            self.canvas.setPenColor(newColor)
+
+    def openFile(self):
+        filePath, fileFormat = QFileDialog.getOpenFileName(self, "Open File",
+                                                         ".", "Images (*.png *.jpg)")
+        if filePath == "":
+            return False
+        return self.canvas.openImage(filePath)
 
     # TODO: Add more File Types
     # TODO: Add compression option
-    def save(self):
-        filePath = QFileDialog.getSaveFileName(self, "Save Image", "",
+    def saveFile(self):
+        filePath, fileFormat = QFileDialog.getSaveFileName(self,
+                                                          "Save Image", "",
                                                   "PNG(*.png);;JPEG(*.jpg *.jpeg);;All Files(*.*) ")
         if filePath == "":
-            return
-        self.canvas.save(filePath)
+            return False
+        return self.canvas.saveImage(filePath)
+
+    def maybeSave(self):
+        if self.canvas.modified:
+            ret = QMessageBox().warning(self, "Scribble", "Image has been "
+                                                     "modified \n Do you "
+                                                          "want to save your changes?",
+                                   QMessageBox.Save | QMessageBox.Discard |
+                                   QMessageBox.Cancel)
+            if ret == QMessageBox.Save:
+                return self.saveFile()
+            elif ret == QMessageBox.Cancel:
+                return False
+        return True
+
+    def closeEvent(self, QCloseEvent):
+        if self.maybeSave():
+            QCloseEvent.accept()
+        else:
+            QCloseEvent.ignore()
+
+def pa(strings):
+    for message in strings:
+        print(message, "\n")
+def p(message):
+    print(message)
 
 if __name__ == "__main__":
     # Init Main App
@@ -132,4 +162,5 @@ if __name__ == "__main__":
 
     # Show & Only exit w/ user
     gui.show()
+
     sys.exit(app.exec_())
