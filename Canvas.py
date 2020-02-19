@@ -1,15 +1,12 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMenuBar, qApp, \
-    QAction, QFileDialog, QAction, QWidget
-from PyQt5.QtGui import QImage, QIcon, QPainter, QPen, QBrush, QPixmap, QColor
-from PyQt5.QtCore import Qt, QPoint
-from PyQt5 import QtCore, QtGui, QtWidgets
-
+from PyQt5.QtWidgets import QWidget
+from PyQt5.QtGui import QImage, QPainter, QPen, QColor
+from PyQt5.QtCore import Qt, QPoint, QSize
 
 class Canvas(QWidget):
 
     def __init__(self):
         super().__init__()
-        self.myPenWidth = 1
+        self.myPenWidth = 3
         self.myPenColor = QColor()
         self.myPenColor = Qt.black
 
@@ -20,8 +17,13 @@ class Canvas(QWidget):
         self.image = QImage(self.size(), QImage.Format_RGB32)
         self.image.fill(Qt.white)
 
+        self.maybeSave = True
+
+    # Drawing Options
     def setPenColor(self, color):
         self.myPenColor = color
+    def penColor(self):
+        return self.myPenColor
 
     def setPenWidth(self, width):
         self.myPenWidth = width
@@ -31,28 +33,28 @@ class Canvas(QWidget):
         self.modified = True
         self.update()
 
-    def mousePressEvent(self, event):
+    # Painting Functions
+    def mousePressEvent(self, mouseEvent):
         # If left mouse button pressed, set drawing mode & last pt
-        if event.button() == Qt.LeftButton:
+        if mouseEvent.button() == Qt.LeftButton:
             self.drawing = True
-            self.lastPoint = event.pos()
+            self.lastPoint = mouseEvent.pos()
 
-    def mouseMoveEvent(self, event):
-
+    def mouseMoveEvent(self, mouseEvent):
         # if drawing mode
         if Qt.LeftButton & self.drawing:
-            self.drawLineTo(event.pos())
+            self.drawLineTo(mouseEvent.pos())
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, mouseEvent):
         # Set drawing mode off
-        if (event.button() == Qt.LeftButton and self.drawing):
-            self.drawLineTo(event.pos())
+        if (mouseEvent.button() == Qt.LeftButton and self.drawing):
+            self.drawLineTo(mouseEvent.pos())
             self.drawing = False
 
-    def paintEvent(self, event):
-        # Paint immediately onto self (e.g. QMainWindow)
+    def paintEvent(self, paintEvent):
+        # Paint immediately onto self (e.g. QWidget)
         painter = QPainter(self)
-        dirtyRect = event.rect()
+        dirtyRect = paintEvent.rect()
         painter.drawImage(dirtyRect, self.image, dirtyRect)
 
     def drawLineTo(self, endPoint):
@@ -64,3 +66,51 @@ class Canvas(QWidget):
         self.modified = True
         self.update()
         self.lastPoint = endPoint
+
+
+    # IO Functions
+    def saveImage(self, fileName):
+        visibleImage = self.image
+        if visibleImage.save(fileName):
+            self.modified = False
+            return True
+        else:
+            return False
+
+    def openImage(self, fileName):
+        loadedImage = QImage(fileName)
+
+        # Will run if image is corrupted
+        if loadedImage is None:
+            return False
+
+        newSize = loadedImage.size()
+        newSize.expandedTo(self.size()) # Finds max W/H
+
+        self.resizeImage(newSize)
+        self.image = loadedImage
+
+        self.modified = False
+        self.update()
+        return True
+
+
+
+    # View Functions
+    def resizeEvent(self, resizeEvent):
+        if self.width() > self.image.width() or self.height() > \
+                self.image.height():
+            newWidth = max(self.width() + 128, self.image.width())
+            newHeight = max(self.height() + 128, self.image.height())
+            self.resizeImage(QSize(newWidth, newHeight))
+            self.update()
+
+    def resizeImage(self, newSize):
+        if self.image.size() == newSize:
+            return
+
+        newImage = QImage(newSize, QImage.Format_RGB32)
+        newImage.fill(Qt.white)
+        painter = QPainter(newImage)
+        painter.drawImage(QPoint(0,0), newImage, newImage.rect())
+        self.image = newImage
